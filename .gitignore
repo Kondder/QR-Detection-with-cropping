@@ -1,0 +1,5 @@
+# Ignorar todas las imágenes en el directorio raíz
+*.png
+*.jpg
+*.jpeg
+*.gif
