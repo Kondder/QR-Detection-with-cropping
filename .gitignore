@@ -3,3 +3,11 @@
 *.jpg
 *.jpeg
 *.gif
+drawDetections.py
+oneqr.py
+twoqr.py
+*.jpeg
+resize_cv.py
+video_nocropped.py
+video_cropped.py
+bounding_box_and_polygon.py
