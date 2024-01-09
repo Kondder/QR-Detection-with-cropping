@@ -11,3 +11,8 @@ resize_cv.py
 video_nocropped.py
 video_cropped.py
 bounding_box_and_polygon.py
+QR_coordinate_points.py
+csv_test.py
+extract_name_mp4_file.py
+qr_csv.csv
+qr_csv.py
