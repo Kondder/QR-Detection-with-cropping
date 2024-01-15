@@ -78,16 +78,17 @@ while (captura.isOpened()):
                 cv2.putText(crop_img, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (0, 0, 255), 2)
 
                 #Logica para pasar los puntos devueltos por el poligono a una lista comun de python
+                #Modificar para corregir los puntos
                 arr= []                                
                 for i in range (0,4):       # 0 a 4 porque el poligono tiene 4 puntos
                     arr_sub = []            # arr_sub es la sub lista, con 2 elementos (x e y) que conforma un punto
                     arr_sub.append(barcode.polygon[i][0]) 
                     arr_sub.append(barcode.polygon[i][1])
                     arr.append(arr_sub)
-                arr_np = numpy.int32([numpy.array(arr)])        # QUE HACE ACA?? XDXD
+                arr_np = numpy.int32([numpy.array(arr)])        # QUE HACE ACA?? XDXD. Lista de lista pasa a matriz
                 arr = arr_np.tolist()                           # pasa la lista de numpy a una lista de python
                 
-
+                #Clase que se llama point. clase hija de point 2d y 3d
                 cv2.polylines(crop_img, arr_np, True, (0,0,255), 2)  #dibujar poligono que encierra qr - esto es solo para visualizar en el video
 
                 #Dibujar puntos en las esquinas de los poligonos - esto es solo para visualizar en el video
@@ -108,7 +109,7 @@ while (captura.isOpened()):
                 break
             y = y + h   #Se incrementa la posicion base del cropped en altura
 
-        y = 0  #HIJO DE PUTA - Se tiene que resetear a cero la posicion en altura
+        y = 0       #HIJO DE PUTA - Se tiene que resetear a cero la posicion en altura
         x = x + w   #Se incrementa la posicion base del cropped en ancho
 
     n_frame += 1    #se incrementa el numero de frame
