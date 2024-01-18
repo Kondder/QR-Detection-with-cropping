@@ -65,22 +65,33 @@ def sort_position(coordenate_list):     #Corregir posiciones de los poligonos
 
     return sorted_list
 
-def with_zero(data_qr):
-    for s in data_qr:
-        arr_empty = []
+def generate_heatmap(data_qr, data_x, data_y):     #data_qr es la cantidad de qr reconocidos por iteracion (con un cropped distinto)
 
-        for t in range(0,11):
-                if int(s/100) == t:
-                    arr_empty.append(t)
-                else:
-                    arr_empty.append(0)
-        
-        full.append(arr_empty)
-    
-    x=np.array(full)
-    y=np.transpose(x)
-    
-    return y #Data [[0.0 0.0 0.3 0.0 0.0 0.0 0.0 0.0][0.0 0 0 0 0.6 0 0 0 0][0 0 0 0.4 0 0 0 0 0][0 0 0 0 0 0 0 0 0.8 0]]
+    data_y.reverse()                               #Se da vuelta la lista de y para que se imprima de forma ascendente
+
+    fig, ax = plt.subplots(figsize = (16,12))
+
+    ax.set_xticks(np.arange(len(data_x)), labels=data_x)
+    ax.set_yticks(np.arange(len(data_y)), labels=data_y)
+
+    for i in range(0, len(data_qr)):        #Logica para normalizar los valores de la lista (para que sean entre 0 y 1)
+        for j in range(0,len(data_qr[i])):
+            data_qr[i][j] = data_qr[i][j]/100
+
+
+    #Ordenar datos para graficar
+    data_qr = np.transpose(np.array(data_qr))  #Cambia columna por fila
+    data_qr = data_qr.tolist()     
+    data_qr.reverse()                          #Este invierte los elementos de la lista
+    print(data_qr)
+
+    ax.imshow(data_qr, cmap = "Blues") 
+
+    plt.xlabel('ancho de recorte')
+    plt.ylabel('alto de recorte')
+    plt.savefig('heatmap_marinozi.png')
+    plt.show()
+
 
 def cropp_frame(imagen, div_h, div_w, h, w):
     x = 0
@@ -126,84 +137,92 @@ def cropp_frame(imagen, div_h, div_w, h, w):
         x = x + w   #Se incrementa la posicion base del cropped en ancho
 # ------------------------
 
-dt_num = []
-dt_qr = []
-dv = []
+dt_qr = []      #lista de cantidad de QRs reconocidos por iteracion
+dt_x = []       #valores en x para crear heatmap
+dt_y = []       #valores en y para crear heatmap
+dv = []         #Este arreglo recibe los divisores de altura arbitrarios. Ahora va de 1,6
+sub_list = []
 
-for j in range(0, 24):
-        div_h = random.randint(4,24) #divisor de altura
-        while(div_h not in dv):
-            dv.append(div_h)
-            j = j - 1
+#Obtener valores random
 
+#Este va a ser una funcion
+
+#for j in range(0, 24):
+#        div_h = random.randint(4,24) #divisor de altura
+#        while(div_h not in dv):
+#            dv.append(div_h)
+#            j = j - 1
+
+
+for i in range(1,10):
+    dv.append(i)
+
+    #[1,2,3,4,5,6]
+    
 print(dv)
 print(len(dv))
 
 for i in range(0,len(dv)):
+    sub_list = []       #sub_list es la lista que contiene, para un valor de x, todas las combinaciones con valores de y
     
-    elapsed_time = 0
-    captura = cv2.VideoCapture("VID_20230322_173621.mp4")
+    for j in range(0,len(dv)):
 
-    # Seteamos la resolucion casteando de float a int. 
-    frame_width = int(captura.get(3)) 
-    frame_height = int(captura.get(4)) 
-    size = (frame_width, frame_height)
+        elapsed_time = 0
+        captura = cv2.VideoCapture("VID_20230322_173621.mp4")
 
-    # Define the codec and create VideoWriter object.The output is stored in 'outpy.avi' file.
-    out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 29.458, size)
+        # Seteamos la resolucion casteando de float a int. 
+        frame_width = int(captura.get(3)) 
+        frame_height = int(captura.get(4)) 
+        size = (frame_width, frame_height)
 
-    div_h = dv[i]            #divisor de altura
-    div_w = int(div_h/2)     #divisor de ancho (siempre es la mitad del divisor de altura)
+        # Define the codec and create VideoWriter object.The output is stored in 'outpy.avi' file.
+        out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 29.458, size)
 
+        #CUIDADO CON ESTO !!!!!!!
+        div_h = dv[i]            # divisor de altura
+        div_w = dv[j]            # divisor de ancho
 
+        h = int(frame_height/div_h)   #divide en altura y ancho segun la resolucion del video
+        w = int(frame_width/div_w)  
 
-    h = int(frame_height/div_h)   #divide en altura y ancho segun la resolucion del video
-    w = int(frame_width/div_w)  
-
-    valores = [div_h, div_w, h, w]
-    print(valores)
-    
-    #Datos divisores
-
-    dt_num.append(str([div_h, div_w]))
-    n_qr_total = 0
-
-
-    while (captura.isOpened()):
-
+        valores = [div_h, div_w, h, w]
+        print(valores)
         
-        ret, image = captura.read() #image es un frame del video
+        #Datos divisores
+        dt_x.append(str(div_w))     #Se agregan como string para usarlos como labels en el heatmap
+        dt_y.append(str(div_h))
 
-        if ret == True:
-            
-            cropp_frame(image, div_h, div_w, h , w)
-            n_frame += 1    #se incrementa el numero de frame
-            
-            cv2.waitKey(1)
-        else: break
+        n_qr_total = 0
 
-    et = time.time()  #tiempo de finalizado de ejecución
+        while (captura.isOpened()):
 
-    elapsed_time = et - st      #tiempo total que tarda el programa
-    print('Tiempo ejecutado cropped:', elapsed_time, 'seconds')
-    dt_qr.append(n_qr_total)    # dt_qr es el arreglo con todos los valores de las pruebas
+            ret, image = captura.read() #image es un frame del video
 
-    captura.release()
-    cv2.destroyAllWindows()
+            if ret == True:
+                
+                cropp_frame(image, div_h, div_w, h , w)
+                n_frame += 1    #se incrementa el numero de frame
+                
+                cv2.waitKey(1)
+            else: break
 
-print(dt_qr)
-print(dt_num)
-draw = with_zero(dt_qr)
+        et = time.time()  #tiempo de finalizado de ejecución
+
+        elapsed_time = et - st      #tiempo total que tarda el programa
+        print('Tiempo ejecutado cropped:', elapsed_time, 'seconds')
+
+        sub_list.append(n_qr_total)  
+        
+        captura.release()
+        cv2.destroyAllWindows()
+
+
+    dt_qr.append(sub_list)    #dt_qr es el arreglo con la cantidad de QRs reconocidos para combinaciones de x e y
+
 
 # Heat map
-fig, ax = plt.subplots(figsize = (16,12))
+print(dt_qr)
+print(dt_x)
+print(dt_y)
+generate_heatmap(dt_qr, dv, dv)        
 
-ax.imshow(draw, cmap = "Blues")
-
-ax.set_xticks(np.arange(len(dt_num)), labels=dt_num,)
-
-plt.xlabel('Tamaño de recorte')
-plt.ylabel('Cantidad de QRs reconocidos')
-plt.savefig('testing_heatmap.png')
-
-plt.show()
