@@ -17,6 +17,7 @@ n_frame = 0 #numero de frame
 n_qr_total = 0  #numero total de qrs detectados en el video
 
 
+
 positions = ["left_top", "left_bottom", "right_top", "right_bottom"]
 full = []
 
@@ -24,7 +25,7 @@ full = []
 #Abriendo CSV 
 file = open('qr_csv.csv', 'w', newline='')
 writer = csv.writer(file)
-writer.writerow(['frame', 'qr', 'esquina', 'x', 'y'])   #primera fila del CSV 
+writer.writerow(['track_id','frame', 'qr', 'esquina', 'x', 'y'])   #primera fila del CSV 
 
 # ------ FUNCIONES ------
 
@@ -54,8 +55,10 @@ def draw_polygons(imagen, coordenate_np, coordenate_list):   #Dibujar poligonos 
     cv2.imshow('video', image)   #muestra un frame del video en pantalla
 
 def csv_write(frame, data, positions, coordenate_list):     #Escribir en CSV
+    global track_id
     for i in range(0,4):
-        writer.writerow([frame, data, positions[i], coordenate_list[i][0], coordenate_list[i][1]]) #'frame', 'qr', 'esquina', 'x', 'y'
+        writer.writerow([track_id, frame, data, positions[i], coordenate_list[i][0], coordenate_list[i][1]]) #'track_id','frame', 'qr', 'esquina', 'x', 'y'
+        track_id = track_id + 1
 
 def sort_position(coordenate_list):     #Corregir posiciones de los poligonos
     sorted_list_x = sorted(coordenate_list, key=lambda x: x[0], reverse=False)
@@ -67,12 +70,13 @@ def sort_position(coordenate_list):     #Corregir posiciones de los poligonos
 
 def generate_heatmap(data_qr, data_x, data_y):     #data_qr es la cantidad de qr reconocidos por iteracion (con un cropped distinto)
 
-    data_y.reverse()                               #Se da vuelta la lista de y para que se imprima de forma ascendente
+    _y= data_y[::-1]                               #Se da vuelta la lista de y para que se imprima de forma ascendente. Antes era data__y.reverse()
+    print(len(_y))
 
     fig, ax = plt.subplots(figsize = (16,12))
-
+    
     ax.set_xticks(np.arange(len(data_x)), labels=data_x)
-    ax.set_yticks(np.arange(len(data_y)), labels=data_y)
+    ax.set_yticks(np.arange(len(_y)), labels=_y)
 
     for i in range(0, len(data_qr)):        #Logica para normalizar los valores de la lista (para que sean entre 0 y 1)
         for j in range(0,len(data_qr[i])):
@@ -89,7 +93,7 @@ def generate_heatmap(data_qr, data_x, data_y):     #data_qr es la cantidad de qr
 
     plt.xlabel('ancho de recorte')
     plt.ylabel('alto de recorte')
-    plt.savefig('heatmap_marinozi.png')
+    plt.savefig('heatmap.png')
     plt.show()
 
 
@@ -97,6 +101,7 @@ def cropp_frame(imagen, div_h, div_w, h, w):
     x = 0
     y = 0
     global n_qr_total
+
     
     for i in range(0,div_w):                            #Se itera tantas veces se dividio el ancho  
         for j in range(0,div_h):                        #Se itera tantas veces se dividio el largo
@@ -128,7 +133,6 @@ def cropp_frame(imagen, div_h, div_w, h, w):
                 draw_polygons(crop_img, arr_np, corrected_arr)                #Ver funcion
                 
                 csv_write(n_frame, data, positions, corrected_arr)            #Ver funcion
-
                 #cv2.waitKey(1)
                 
             y = y + h   #Se incrementa la posicion base del cropped en altura
@@ -154,7 +158,7 @@ sub_list = []
 #            j = j - 1
 
 
-for i in range(1,10):
+for i in range(4,5):
     dv.append(i)
 
     #[1,2,3,4,5,6]
@@ -193,6 +197,7 @@ for i in range(0,len(dv)):
         dt_y.append(str(div_h))
 
         n_qr_total = 0
+        track_id = 1000
 
         while (captura.isOpened()):
 
@@ -224,5 +229,6 @@ for i in range(0,len(dv)):
 print(dt_qr)
 print(dt_x)
 print(dt_y)
-generate_heatmap(dt_qr, dv, dv)        
+if(len(dv)> 4):                     #si el tamaño de la lista es menor a 4 entonces no genera heatmap debido a que necesitas mas de 2 colores para pintar
+    generate_heatmap(dt_qr, dv, dv)        
 
