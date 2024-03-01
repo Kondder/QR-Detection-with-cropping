@@ -3,12 +3,12 @@
 *.jpg
 *.jpeg
 *.gif
+*.avi
 # ignore generated html files,
 *.py
 .Rhistory
 # except foo.html which is maintained by hand
 !modular_video_cropped.py
-
+!most_watched.py
 !testing_heatmap.png
-
 !heatmap_marinozi.png

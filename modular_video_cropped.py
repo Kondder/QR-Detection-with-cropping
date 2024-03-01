@@ -1,13 +1,11 @@
 import cv2
 from pyzbar.pyzbar import decode
-from PIL import Image
 from matplotlib import pyplot as plt
 from pyzbar import pyzbar
 import time
-from PIL import Image, ImageDraw
 import numpy as np
 import csv
-import random
+
 import matplotlib.pyplot as plt
 
 
@@ -25,7 +23,7 @@ full = []
 #Abriendo CSV 
 file = open('qr_csv.csv', 'w', newline='')
 writer = csv.writer(file)
-writer.writerow(['track_id','frame', 'qr', 'esquina', 'x', 'y'])   #primera fila del CSV 
+writer.writerow(['frame', 'qr', 'esquina', 'x', 'y'])   #primera fila del CSV 
 
 # ------ FUNCIONES ------
 
@@ -54,11 +52,9 @@ def draw_polygons(imagen, coordenate_np, coordenate_list):   #Dibujar poligonos 
     out.write(image)
     cv2.imshow('video', image)   #muestra un frame del video en pantalla
 
-def csv_write(frame, data, positions, coordenate_list):     #Escribir en CSV
-    global track_id
+def csv_write(frame, data, positions, coordenate_list, x , y):     #Escribir en CSV
     for i in range(0,4):
-        writer.writerow([track_id, frame, data, positions[i], coordenate_list[i][0], coordenate_list[i][1]]) #'track_id','frame', 'qr', 'esquina', 'x', 'y'
-        track_id = track_id + 1
+        writer.writerow([frame, data, positions[i], coordenate_list[i][0]+x, coordenate_list[i][1]+y]) #'track_id','frame', 'qr', 'esquina', 'x', 'y'
 
 def sort_position(coordenate_list):     #Corregir posiciones de los poligonos
     sorted_list_x = sorted(coordenate_list, key=lambda x: x[0], reverse=False)
@@ -132,7 +128,7 @@ def cropp_frame(imagen, div_h, div_w, h, w):
 
                 draw_polygons(crop_img, arr_np, corrected_arr)                #Ver funcion
                 
-                csv_write(n_frame, data, positions, corrected_arr)            #Ver funcion
+                csv_write(n_frame, data, positions, corrected_arr, x, y)            #Ver funcion
                 #cv2.waitKey(1)
                 
             y = y + h   #Se incrementa la posicion base del cropped en altura
@@ -147,17 +143,6 @@ dt_y = []       #valores en y para crear heatmap
 dv = []         #Este arreglo recibe los divisores de altura arbitrarios. Ahora va de 1,6
 sub_list = []
 
-#Obtener valores random
-
-#Este va a ser una funcion
-
-#for j in range(0, 24):
-#        div_h = random.randint(4,24) #divisor de altura
-#        while(div_h not in dv):
-#            dv.append(div_h)
-#            j = j - 1
-
-
 for i in range(4,5):
     dv.append(i)
 
@@ -166,63 +151,62 @@ for i in range(4,5):
 print(dv)
 print(len(dv))
 
-for i in range(0,len(dv)):
-    sub_list = []       #sub_list es la lista que contiene, para un valor de x, todas las combinaciones con valores de y
-    
-    for j in range(0,len(dv)):
 
-        elapsed_time = 0
-        captura = cv2.VideoCapture("VID_20230322_173621.mp4")
+sub_list = []       #sub_list es la lista que contiene, para un valor de x, todas las combinaciones con valores de y
 
-        # Seteamos la resolucion casteando de float a int. 
-        frame_width = int(captura.get(3)) 
-        frame_height = int(captura.get(4)) 
-        size = (frame_width, frame_height)
 
-        # Define the codec and create VideoWriter object.The output is stored in 'outpy.avi' file.
-        out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 29.458, size)
 
-        #CUIDADO CON ESTO !!!!!!!
-        div_h = dv[i]            # divisor de altura
-        div_w = dv[j]            # divisor de ancho
+elapsed_time = 0
+captura = cv2.VideoCapture("VID_20230322_173621.mp4")
 
-        h = int(frame_height/div_h)   #divide en altura y ancho segun la resolucion del video
-        w = int(frame_width/div_w)  
+# Seteamos la resolucion casteando de float a int. 
+frame_width = int(captura.get(3)) 
+frame_height = int(captura.get(4)) 
+size = (frame_width, frame_height)
 
-        valores = [div_h, div_w, h, w]
-        print(valores)
+# Define the codec and create VideoWriter object.The output is stored in 'outpy.avi' file.
+out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 29.458, size)
+
+#CUIDADO CON ESTO !!!!!!!
+div_h = 5        # divisor de altura
+div_w = 3           # divisor de ancho
+
+h = int(frame_height/div_h)   #divide en altura y ancho segun la resolucion del video
+w = int(frame_width/div_w)  
+
+valores = [div_h, div_w, h, w]
+print(valores)
+
+#Datos divisores
+dt_x.append(str(div_w))     #Se agregan como string para usarlos como labels en el heatmap
+dt_y.append(str(div_h))
+
+n_qr_total = 0
+
+while (captura.isOpened()):
+
+    ret, image = captura.read() #image es un frame del video
+
+    if ret == True:
         
-        #Datos divisores
-        dt_x.append(str(div_w))     #Se agregan como string para usarlos como labels en el heatmap
-        dt_y.append(str(div_h))
-
-        n_qr_total = 0
-        track_id = 1000
-
-        while (captura.isOpened()):
-
-            ret, image = captura.read() #image es un frame del video
-
-            if ret == True:
-                
-                cropp_frame(image, div_h, div_w, h , w)
-                n_frame += 1    #se incrementa el numero de frame
-                
-                cv2.waitKey(1)
-            else: break
-
-        et = time.time()  #tiempo de finalizado de ejecución
-
-        elapsed_time = et - st      #tiempo total que tarda el programa
-        print('Tiempo ejecutado cropped:', elapsed_time, 'seconds')
-
-        sub_list.append(n_qr_total)  
+        cropp_frame(image, div_h, div_w, h , w)
+        n_frame += 1    #se incrementa el numero de frame
         
-        captura.release()
-        cv2.destroyAllWindows()
+        cv2.waitKey(1)
+    else: break
+
+et = time.time()  #tiempo de finalizado de ejecución
+
+elapsed_time = et - st      #tiempo total que tarda el programa
+print('Tiempo ejecutado cropped:', elapsed_time, 'seconds')
+
+sub_list.append(n_qr_total)  
+
+captura.release()
+cv2.destroyAllWindows()
 
 
-    dt_qr.append(sub_list)    #dt_qr es el arreglo con la cantidad de QRs reconocidos para combinaciones de x e y
+dt_qr.append(sub_list)    #dt_qr es el arreglo con la cantidad de QRs reconocidos para combinaciones de x e y
 
 
 # Heat map
@@ -231,4 +215,3 @@ print(dt_x)
 print(dt_y)
 if(len(dv)> 4):                     #si el tamaño de la lista es menor a 4 entonces no genera heatmap debido a que necesitas mas de 2 colores para pintar
     generate_heatmap(dt_qr, dv, dv)        
-
