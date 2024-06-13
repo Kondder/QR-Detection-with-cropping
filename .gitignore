@@ -6,6 +6,8 @@
 *.avi
 # ignore generated html files,
 *.py
+*.txt
+ranking_by_col.csv
 .Rhistory
 # except foo.html which is maintained by hand
 !modular_video_cropped.py
